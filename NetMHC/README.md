@@ -1,10 +1,10 @@
 # NetMHC — netMHCpan 4.2c Python Wrapper
 
-Interactive Python wrapper for **netMHCpan 4.2c** with GUI dialogs.  
+Interactive Python wrapper for **netMHCpan 4.2c** with GUI dialogs.
 Designed for Spyder on macOS (Apple Silicon & Intel) and Linux.
 
 > **netMHCpan license**: Free for academic use only —
-> do not redistribute the binaries.  
+> do not redistribute the binaries.
 > Download from: https://services.healthtech.dtu.dk/services/NetMHCpan-4.1/
 
 ---
@@ -13,12 +13,12 @@ Designed for Spyder on macOS (Apple Silicon & Intel) and Linux.
 
 - Python ≥ 3.8
 - pandas, matplotlib (installed via `requirements.txt`)
-- netMHCpan 4.2c binary (downloaded separately from DTU — see Step 3 below)
+- netMHCpan 4.2c binary (downloaded separately from DTU — see Step 3)
 - macOS: tcsh (`brew install tcsh` if missing)
 
 ---
 
-## Installation
+## Installation & Setup
 
 ### Step 1 — Clone this repo
 
@@ -30,7 +30,7 @@ cd Protocol/NetMHC
 ### Step 2 — Install Python dependencies
 
 ```bash
-pip install -r requirements.txt
+pip3 install -r requirements.txt
 ```
 
 ### Step 3 — Download netMHCpan 4.2c from DTU
@@ -48,32 +48,28 @@ Download the correct build for your computer:
 Extract it:
 
 ```bash
-# Mac example (adjust filename if different)
 tar -xvf netMHCpan-4.2c.Darwin_arm64.tar.gz -C ~/tools/
 
-# Rename if the folder has a space in the name (common issue)
+# Rename if the folder has a space (common issue)
 mv ~/tools/"netMHCpan-4.2 2" ~/tools/netMHCpan-4.2c
 ```
 
-### Step 4 — Set up netMHCpan (run once)
-
-Open Spyder and run this setup script, replacing `install_dir` with your
-actual path:
+### Step 4 — Set up netMHCpan (run once in Python)
 
 ```python
 import os, shutil
 
-install_dir = "/Users/yourname/tools/netMHCpan-4.2c"  # ← change this
+install_dir = "/Users/yourname/tools/netMHCpan-4.2c"  # ← change to your path
 bin_path    = os.path.join(install_dir, "netMHCpan")
 
-# 1. Patch internal NMHOME path (line 13 of the shell script)
+# Patch internal NMHOME path
 with open(bin_path) as f:
     lines = f.readlines()
 lines[13] = f"setenv\tNMHOME\t{install_dir}\n"
 with open(bin_path, "w") as f:
     f.writelines(lines)
 
-# 2. Fix tcsh glob issue with versioned binary name
+# Fix tcsh glob issue
 with open(bin_path) as f:
     content = f.read()
 content = content.replace(
@@ -83,8 +79,8 @@ content = content.replace(
 with open(bin_path, "w") as f:
     f.write(content)
 
-# 3. Copy platform binaries into bin/
-#    Change 'Darwin_arm64' to 'Darwin_x86_64' or 'Linux_x86_64' if needed
+# Copy platform binaries into bin/
+# Change 'Darwin_arm64' to 'Darwin_x86_64' or 'Linux_x86_64' if needed
 src = os.path.join(install_dir, "Darwin_arm64", "bin")
 dst = os.path.join(install_dir, "bin")
 os.makedirs(dst, exist_ok=True)
@@ -95,24 +91,29 @@ for fname in os.listdir(src):
 print("Setup complete.")
 ```
 
-### Step 5 — Edit the install path in the main script
+### Step 5 — Edit the two paths in run_netmhcpan.py
 
-Open `run_netmhcpan.py` and change line 10 to your install path:
+Open `run_netmhcpan.py` and update these two lines to match your username
+and install location:
 
 ```python
-INSTALL_DIR = "/Users/yourname/tools/netMHCpan-4.2c"  # ← edit this
+# Line ~6 — path to the NetMHC folder
+sys.path.insert(0, "/Users/yourname/Protocol/NetMHC")   # ← change this
+
+# Line ~14 — path to netMHCpan install
+INSTALL_DIR = "/Users/yourname/tools/netMHCpan-4.2c"    # ← change this
 ```
 
 ### Step 6 — Run
 
+Open `run_netmhcpan.py` in Spyder and press **F5**, or in Terminal:
+
 ```bash
-python run_netmhcpan.py
+python3 /Users/yourname/Protocol/NetMHC/run_netmhcpan.py
 ```
 
-Or open `run_netmhcpan.py` in Spyder and press **Run (F5)**.
-
 A dialog box will appear asking for:
-- HLA alleles (e.g. `HLA-A11:01, HLA-A03:01`) — no asterisk
+- HLA alleles (e.g. `HLA-A11:01, HLA-A03:01`) — **no asterisk**
 - Peptide lengths (e.g. `9, 10`)
 - Input mode: peptide list or full protein FASTA
 - Sequence input
@@ -124,8 +125,8 @@ save dialogs let you export CSVs anywhere you like.
 
 ## Allele name format
 
-netMHCpan 4.2c uses `HLA-A02:01` format — **no asterisk**.  
-To see all supported alleles:
+Use `HLA-A02:01` format — **no asterisk**.
+To see all supported alleles for your installation:
 
 ```python
 from netmhcpan import list_alleles
@@ -195,5 +196,5 @@ Protocol/NetMHC/
 
 ## License
 
-Wrapper code: MIT  
+Wrapper code: MIT
 netMHCpan: Academic use only — do not redistribute the DTU binaries.

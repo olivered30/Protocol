@@ -3,6 +3,10 @@
 # https://github.com/olivered30/Protocol/tree/main/NetMHC
 # ─────────────────────────────────────────────────────────────────────────────
 
+import sys, os
+# ── EDIT THIS to your local NetMHC folder path ───────────────────────────────
+sys.path.insert(0, "/Users/yourname/Protocol/NetMHC")   # <- change to your path
+
 import matplotlib.pyplot as plt
 from netmhcpan import (
     run_netmhcpan, generate_subpeptides,
