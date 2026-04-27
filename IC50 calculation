@@ -1,0 +1,190 @@
+import { useState } from "react";
+import { ComposedChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from "recharts";
+
+const correctA1101 = [
+  { conc: 100,  vals: [6.14904944, 6.03905866, 5.54430301] },
+  { conc: 30,   vals: [6.29882197, 6.05477569, 5.31687664] },
+  { conc: 10,   vals: [5.02289142, 4.99347256, 4.66802431] },
+  { conc: 3,    vals: [3.24882443, 3.49360065, 3.04636442] },
+  { conc: 1,    vals: [2.02358397, 2.09326232, 1.76630051] },
+  { conc: 0.3,  vals: [0.80658853, 0.88745963, 0.71599577] },
+  { conc: 0.1,  vals: [0.5379546,  0.47985056, 0.41860127] },
+  { conc: 0.03, vals: [0.2151877,  0.23662062, 0.2523998]  },
+  { conc: 0.01, vals: [0.08991348, 0.13827868, 0.02905042] },
+  { conc: 0.003,vals: [-0.0030826, 0.01103609, 0.01400957] },
+];
+const dataA1102 = [
+  { conc: 100,  vals: [4.00747378, 4.04747128, 3.53892505] },
+  { conc: 30,   vals: [3.62311413, 3.48107605, 3.47488344] },
+  { conc: 10,   vals: [2.727136,   2.7865326,  2.50557203] },
+  { conc: 3,    vals: [1.58642142, 1.53179837, 1.49853934] },
+  { conc: 1,    vals: [0.79652849, 0.77583204, 0.7559459]  },
+  { conc: 0.3,  vals: [0.305021,   0.28566624, 0.29072482] },
+  { conc: 0.1,  vals: [0.17417488, 0.1720172,  0.20161674] },
+  { conc: 0.03, vals: [0.05769301, 0.09368115, 0.09494292] },
+  { conc: 0.01, vals: [0.02651503, 0.07253709, 0.08533784] },
+  { conc: 0.003,vals: [0.04215289, 0.05525045, 0.05232455] },
+];
+
+const paramsA = [0.0864, 6.2724, 2.6024, 0.9224];
+const paramsB = [0.0606, 4.1229, 5.2731, 0.9564];
+
+function mean(arr) { return arr.reduce((s,v)=>s+v,0)/arr.length; }
+function model4PL(x,[bottom,top,ic50,hill]){ return bottom+(top-bottom)/(1+Math.pow(ic50/x,hill)); }
+
+const ic50A=2.6024, ic50B=5.2731;
+const yAtIC50A=model4PL(ic50A,paramsA);
+const yAtIC50B=model4PL(ic50B,paramsB);
+const logIC50A=Math.log10(ic50A);
+const logIC50B=Math.log10(ic50B);
+
+const tRows = [
+  { conc:100,  mA:5.91080, mB:3.86462, diff:2.04618,  t:42.750,  p:0.00055, sig:"***" },
+  { conc:30,   mA:5.89016, mB:3.52636, diff:2.36380,  t:9.003,   p:0.01211, sig:"*"   },
+  { conc:10,   mA:4.89480, mB:2.67308, diff:2.22172,  t:56.699,  p:0.00031, sig:"***" },
+  { conc:3,    mA:3.26293, mB:1.53892, diff:1.72401,  t:13.970,  p:0.00509, sig:"**"  },
+  { conc:1,    mA:1.96105, mB:0.77610, diff:1.18495,  t:13.006,  p:0.00586, sig:"**"  },
+  { conc:0.3,  mA:0.80335, mB:0.29380, diff:0.50954,  t:9.969,   p:0.00991, sig:"**"  },
+  { conc:0.1,  mA:0.47880, mB:0.18260, diff:0.29620,  t:6.925,   p:0.02022, sig:"*"   },
+  { conc:0.03, mA:0.23474, mB:0.08211, diff:0.15263,  t:31.500,  p:0.00101, sig:"**"  },
+  { conc:0.01, mA:0.08575, mB:0.06146, diff:0.02428,  t:0.603,   p:0.60794, sig:"ns"  },
+  { conc:0.003,mA:0.00732, mB:0.04991, diff:-0.04259, t:-19.745, p:0.00256, sig:"**"  },
+];
+
+const sigStyle = (s) => {
+  if(s==="***") return { background:"#FCEBEB", color:"#A32D2D" };
+  if(s==="**")  return { background:"#FAECE7", color:"#993C1D" };
+  if(s==="*")   return { background:"#FAEEDA", color:"#854F0B" };
+  return { background:"var(--color-background-secondary)", color:"var(--color-text-secondary)" };
+};
+
+const concRange=[];
+for(let i=-3;i<=2.05;i+=0.04) concRange.push(Math.pow(10,i));
+
+const obsAc=correctA1101.map(d=>({logConc:Math.log10(d.conc),A1101_obs:mean(d.vals)}));
+const obsBc=dataA1102.map(d=>({logConc:Math.log10(d.conc),A1102_obs:mean(d.vals)}));
+
+const chartData=concRange.map(c=>{
+  const lc=Math.log10(c);
+  const mA=obsAc.find(o=>Math.abs(o.logConc-lc)<0.001);
+  const mB=obsBc.find(o=>Math.abs(o.logConc-lc)<0.001);
+  return { logConc:lc, A1101_fit:model4PL(c,paramsA), A1102_fit:model4PL(c,paramsB),
+    A1101_obs:mA?mA.A1101_obs:undefined, A1102_obs:mB?mB.A1102_obs:undefined };
+});
+
+const xTicks=[-3,-2,-1,0,1,2];
+const xTickLabels={"-3":"0.001","-2":"0.01","-1":"0.1","0":"1","1":"10","2":"100"};
+const CustomDot=({cx,cy,fill})=><circle cx={cx} cy={cy} r={5} fill={fill} stroke="white" strokeWidth={1.5}/>;
+const LabelY=({viewBox,value,color})=>{
+  const {x,y,width}=viewBox;
+  return <text x={x+width+4} y={y+4} fill={color} fontSize={11} fontWeight={500} textAnchor="start">{value}</text>;
+};
+const LabelX=({viewBox,value,color,yOffset})=>{
+  const {x,y,height}=viewBox;
+  return <text x={x} y={y+height+(yOffset||14)} fill={color} fontSize={11} fontWeight={500} textAnchor="middle">{value}</text>;
+};
+
+export default function IVTResults() {
+  const [tab, setTab] = useState("ttest");
+  return (
+    <div style={{padding:"1rem 0"}}>
+      <div style={{display:"flex",gap:8,marginBottom:16}}>
+        {["ttest","ic50"].map(t=>(
+          <button key={t} onClick={()=>setTab(t)} style={{
+            padding:"6px 16px", borderRadius:6, fontSize:13, cursor:"pointer",
+            background: tab===t ? "var(--color-background-info)" : "var(--color-background-secondary)",
+            color: tab===t ? "var(--color-text-info)" : "var(--color-text-secondary)",
+            border: tab===t ? "0.5px solid var(--color-border-info)" : "0.5px solid var(--color-border-tertiary)",
+            fontWeight: tab===t ? 500 : 400,
+          }}>
+            {t==="ttest" ? "Paired t-test" : "IC50 curves"}
+          </button>
+        ))}
+      </div>
+
+      {tab==="ttest" && (
+        <>
+          <table style={{width:"100%",borderCollapse:"collapse",fontSize:13}}>
+            <thead>
+              <tr>
+                {["Conc (μM)","Mean A1101","Mean A1102","Mean diff","t statistic","df","p-value","Sig"].map((h,i)=>(
+                  <th key={i} style={{fontWeight:500,color:"var(--color-text-secondary)",textAlign:i===0?"left":"right",
+                    padding:"6px 10px",borderBottom:"0.5px solid var(--color-border-tertiary)",fontSize:12}}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {tRows.map((r,i)=>(
+                <tr key={i}>
+                  <td style={{padding:"6px 10px",borderBottom:"0.5px solid var(--color-border-tertiary)",fontWeight:500}}>{r.conc}</td>
+                  <td style={{padding:"6px 10px",borderBottom:"0.5px solid var(--color-border-tertiary)",textAlign:"right"}}>{r.mA.toFixed(5)}</td>
+                  <td style={{padding:"6px 10px",borderBottom:"0.5px solid var(--color-border-tertiary)",textAlign:"right"}}>{r.mB.toFixed(5)}</td>
+                  <td style={{padding:"6px 10px",borderBottom:"0.5px solid var(--color-border-tertiary)",textAlign:"right"}}>{r.diff.toFixed(5)}</td>
+                  <td style={{padding:"6px 10px",borderBottom:"0.5px solid var(--color-border-tertiary)",textAlign:"right"}}>{r.t.toFixed(3)}</td>
+                  <td style={{padding:"6px 10px",borderBottom:"0.5px solid var(--color-border-tertiary)",textAlign:"right"}}>2</td>
+                  <td style={{padding:"6px 10px",borderBottom:"0.5px solid var(--color-border-tertiary)",textAlign:"right"}}>{r.p.toFixed(5)}</td>
+                  <td style={{padding:"6px 10px",borderBottom:"0.5px solid var(--color-border-tertiary)",textAlign:"right"}}>
+                    <span style={{...sigStyle(r.sig),borderRadius:4,padding:"2px 7px",fontSize:12,display:"inline-block",fontWeight:500}}>{r.sig}</span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <p style={{fontSize:11,color:"var(--color-text-secondary)",marginTop:8}}>
+            Two-tailed paired t-test, n=3, df=2. *** p&lt;0.001 &nbsp;** p&lt;0.01 &nbsp;* p&lt;0.05 &nbsp;ns p≥0.05
+          </p>
+          <p style={{fontSize:11,color:"var(--color-text-secondary)",marginTop:4}}>
+            Note: at 0.003 μM, A1102 mean (0.050) slightly exceeds A1101 mean (0.007) — mean diff is negative and significant (**), likely reflecting baseline noise near zero.
+          </p>
+        </>
+      )}
+
+      {tab==="ic50" && (
+        <>
+          <div style={{display:"flex",gap:16,marginBottom:16,flexWrap:"wrap"}}>
+            <div style={{flex:1,minWidth:140,background:"var(--color-background-secondary)",borderRadius:8,padding:"12px 16px"}}>
+              <div style={{fontSize:12,color:"var(--color-text-secondary)",marginBottom:4}}>A1101_IVT IC50</div>
+              <div style={{fontSize:22,fontWeight:500,color:"#185FA5"}}>2.60 μM</div>
+              <div style={{fontSize:11,color:"var(--color-text-secondary)",marginTop:2}}>Hill = 0.92 · Top = 6.27</div>
+            </div>
+            <div style={{flex:1,minWidth:140,background:"var(--color-background-secondary)",borderRadius:8,padding:"12px 16px"}}>
+              <div style={{fontSize:12,color:"var(--color-text-secondary)",marginBottom:4}}>A1102_IVT IC50</div>
+              <div style={{fontSize:22,fontWeight:500,color:"#993C1D"}}>5.27 μM</div>
+              <div style={{fontSize:11,color:"var(--color-text-secondary)",marginTop:2}}>Hill = 0.96 · Top = 4.12</div>
+            </div>
+          </div>
+          <ResponsiveContainer width="100%" height={360}>
+            <ComposedChart data={chartData} margin={{top:10,right:60,bottom:35,left:20}}>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(128,128,128,0.15)"/>
+              <XAxis dataKey="logConc" type="number" domain={[-3,2.1]} ticks={xTicks}
+                tickFormatter={v=>xTickLabels[String(v)]||""}
+                label={{value:"Concentration (μM)",position:"insideBottom",offset:-22,fontSize:12,fill:"var(--color-text-secondary)"}}
+                tick={{fontSize:11,fill:"var(--color-text-secondary)"}}/>
+              <YAxis label={{value:"Response",angle:-90,position:"insideLeft",offset:10,fontSize:12,fill:"var(--color-text-secondary)"}}
+                tick={{fontSize:11,fill:"var(--color-text-secondary)"}} domain={[-0.2,7]}/>
+              <Tooltip formatter={(v,name)=>[v!=null?v.toFixed(4):"—",name]}
+                labelFormatter={v=>`Conc: ${Math.pow(10,v).toFixed(3)} μM`}
+                contentStyle={{fontSize:12,borderRadius:6}}/>
+              <Legend verticalAlign="top" height={28} wrapperStyle={{fontSize:12}}/>
+              <ReferenceLine y={yAtIC50A} stroke="#185FA5" strokeDasharray="6 4" strokeWidth={1.5}
+                label={<LabelY value={yAtIC50A.toFixed(2)} color="#185FA5"/>}/>
+              <ReferenceLine x={logIC50A} stroke="#185FA5" strokeDasharray="6 4" strokeWidth={1.5}
+                label={<LabelX value={`IC50=${ic50A} μM`} color="#185FA5" yOffset={14}/>}/>
+              <ReferenceLine y={yAtIC50B} stroke="#993C1D" strokeDasharray="6 4" strokeWidth={1.5}
+                label={<LabelY value={yAtIC50B.toFixed(2)} color="#993C1D"/>}/>
+              <ReferenceLine x={logIC50B} stroke="#993C1D" strokeDasharray="6 4" strokeWidth={1.5}
+                label={<LabelX value={`IC50=${ic50B} μM`} color="#993C1D" yOffset={26}/>}/>
+              <Line dataKey="A1101_fit" name="A1101 (fit)" stroke="#185FA5" dot={false} strokeWidth={2} legendType="line"/>
+              <Line dataKey="A1102_fit" name="A1102 (fit)" stroke="#993C1D" dot={false} strokeWidth={2} legendType="line"/>
+              <Line dataKey="A1101_obs" name="A1101 (obs)" stroke="#185FA5" dot={<CustomDot fill="#185FA5"/>} strokeWidth={0} legendType="circle" connectNulls={false}/>
+              <Line dataKey="A1102_obs" name="A1102 (obs)" stroke="#993C1D" dot={<CustomDot fill="#993C1D"/>} strokeWidth={0} legendType="circle" connectNulls={false}/>
+            </ComposedChart>
+          </ResponsiveContainer>
+          <p style={{fontSize:11,color:"var(--color-text-secondary)",marginTop:4,textAlign:"center"}}>
+            4PL fit. Dots = observed means, lines = fitted curves. Dashed lines indicate IC50 crosshairs.
+          </p>
+        </>
+      )}
+    </div>
+  );
+}
